@@ -5,8 +5,8 @@ import { WalletModalProvider, WalletMultiButton } from '@solana/wallet-adapter-r
 import { Connection } from '@solana/web3.js'
 import SwapInterface from './components/SwapInterface'
 
-// Use a proxied RPC endpoint to avoid CORS issues
-const endpoint = 'http://localhost:5173/api/solana'
+// Use a public RPC endpoint that supports WebSockets
+const endpoint = 'https://api.mainnet.solana.com'
 const wallets = [
   new PhantomWalletAdapter(),
   new SolflareWalletAdapter(),

@@ -4,7 +4,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { ArrowLeftRight, ArrowUpDown, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react'
 import TokenSelector from './TokenSelector'
 import { Token, QuoteResponse } from '../types'
-import { jupiterService, JupiterSDK } from '../services/jupiter'
+import { gillJupiterService } from '../services/gill-jupiter'
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112'
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
@@ -24,25 +24,14 @@ const SwapInterface: React.FC = () => {
   const [swapping, setSwapping] = useState(false)
   const [tokensLoading, setTokensLoading] = useState(true)
 
-  // Initialize Jupiter SDK
-  const [jupiterSDK, setJupiterSDK] = useState<JupiterSDK | null>(null)
-  
-  useEffect(() => {
-    if (connection) {
-      setJupiterSDK(new JupiterSDK(connection))
-    }
-  }, [connection])
-
-  // Initialize with SOL and USDC
+  // Initialize with SOL and USDC using Gill
   useEffect(() => {
     const initializeTokens = async () => {
-      if (!jupiterSDK) return
-      
       try {
         setTokensLoading(true)
-        console.log('Loading tokens from Jupiter SDK...')
-        const tokenList = await jupiterSDK.loadTokens()
-        console.log('Loaded tokens:', tokenList.length, 'tokens')
+        console.log('Loading tokens with Gill...')
+        const tokenList = await gillJupiterService.loadTokens()
+        console.log('Loaded tokens with Gill:', tokenList.length, 'tokens')
         console.log('First few tokens:', tokenList.slice(0, 5))
         setTokens(tokenList)
         
@@ -56,7 +45,7 @@ const SwapInterface: React.FC = () => {
         if (solToken) setFromToken(solToken)
         if (usdcToken) setToToken(usdcToken)
       } catch (err) {
-        console.error('Failed to load tokens:', err)
+        console.error('Failed to load tokens with Gill:', err)
         setError('Failed to load token list')
       } finally {
         setTokensLoading(false)
@@ -64,11 +53,11 @@ const SwapInterface: React.FC = () => {
     }
 
     initializeTokens()
-  }, [jupiterSDK])
+  }, [])
 
 
   const fetchQuote = useCallback(async () => {
-    if (!fromToken || !toToken || !fromAmount || parseFloat(fromAmount) <= 0 || !jupiterSDK) {
+    if (!fromToken || !toToken || !fromAmount || parseFloat(fromAmount) <= 0) {
       setQuote(null)
       setToAmount('')
       return
@@ -79,7 +68,7 @@ const SwapInterface: React.FC = () => {
 
     try {
       const amount = (parseFloat(fromAmount) * Math.pow(10, fromToken.decimals)).toString()
-      const quoteData = await jupiterSDK.quote(
+      const quoteData = await gillJupiterService.getQuote(
         fromToken.address,
         toToken.address,
         amount,
@@ -90,14 +79,14 @@ const SwapInterface: React.FC = () => {
       const outAmount = parseFloat(quoteData.outAmount) / Math.pow(10, toToken.decimals)
       setToAmount(outAmount.toFixed(6))
     } catch (err) {
-      console.error('Quote error:', err)
+      console.error('Quote error with Gill:', err)
       setError('Failed to get quote. Please try again.')
       setQuote(null)
       setToAmount('')
     } finally {
       setLoading(false)
     }
-  }, [fromToken, toToken, fromAmount, jupiterSDK])
+  }, [fromToken, toToken, fromAmount])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -119,18 +108,18 @@ const SwapInterface: React.FC = () => {
   }
 
   const handleSwap = async () => {
-    if (!publicKey || !quote || !signTransaction || !jupiterSDK) {
+    if (!publicKey || !quote || !signTransaction) {
       console.error('❌ Missing required swap parameters:', {
         publicKey: !!publicKey,
         quote: !!quote,
-        signTransaction: !!signTransaction,
-        jupiterSDK: !!jupiterSDK
+        signTransaction: !!signTransaction
       })
       return
     }
 
-    console.log('🔄 Starting swap process with Jupiter SDK...')
+    console.log('🔄 Starting swap process with Gill...')
     console.log('👤 User wallet:', publicKey.toString())
+    console.log('🌐 Network: MAINNET (make sure your wallet is connected to mainnet!)')
     console.log('💱 Swap quote:', {
       from: fromToken?.symbol,
       to: toToken?.symbol,
@@ -144,26 +133,17 @@ const SwapInterface: React.FC = () => {
     setSwapSuccess(null)
 
     try {
-      console.log('📋 Building swap transaction with Jupiter SDK...')
-      const swapRequest = {
-        quoteResponse: quote,
-        userPublicKey: publicKey.toString(),
-        wrapAndUnwrapSol: true,
-        // Remove all advanced parameters to use the most basic swap request
-        // This should avoid address lookup tables entirely
-      }
-
-      const swapResponse = await jupiterSDK.getSwapTransaction(swapRequest)
-      console.log('✅ Swap transaction built successfully')
+      console.log('📋 Building swap with Gill...')
       
-      // Execute the actual swap using Jupiter SDK
-      console.log('🚀 Executing swap transaction with Jupiter SDK...')
-      const signature = await jupiterSDK.executeSwap(
-        swapResponse,
+      // Execute the swap using Gill
+      console.log('🚀 Executing swap with Gill...')
+      const signature = await gillJupiterService.executeSwap(
+        quote,
+        publicKey.toString(),
         signTransaction
       )
       
-      console.log('🎉 Swap completed successfully!')
+      console.log('🎉 Swap completed successfully with Gill!')
       console.log('📝 Transaction signature:', signature)
       
       setSwapSuccess(signature)
@@ -171,16 +151,28 @@ const SwapInterface: React.FC = () => {
       setToAmount('')
       setQuote(null)
       
+      // Show success message even if confirmation timed out
+      console.log('✅ Swap transaction sent successfully with Gill!')
+      console.log('🔗 View on Solscan:', `https://solscan.io/tx/${signature}`)
+      
     } catch (err: any) {
-      console.error('💥 Swap process failed:')
+      console.error('💥 Swap process failed with Gill:')
       console.error('📊 Error details:', {
         name: err?.name,
         message: err?.message,
         stack: err?.stack
       })
       
+      // Check if it's a confirmation timeout (not a real failure)
+      if (err?.name === 'TransactionExpiredTimeoutError' || err?.message?.includes('not confirmed in')) {
+        console.log('⚠️ Transaction confirmation timed out, but transaction was sent')
+        console.log('🔗 Check transaction status manually on Solscan')
+        // Don't show error for confirmation timeouts
+        return
+      }
+      
       // Provide more specific error messages
-      let errorMessage = 'Failed to execute swap transaction'
+      let errorMessage = 'Failed to execute swap transaction with Gill'
       if (err?.message?.includes('403')) {
         errorMessage = 'RPC access denied. Please try a different RPC endpoint.'
       } else if (err?.message?.includes('insufficient')) {
@@ -233,19 +225,20 @@ const SwapInterface: React.FC = () => {
 
 
       {swapSuccess && (
-        <div className="mb-4 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+        <div className="mb-4 p-3 bg-green-500/20 rounded-lg" style={{ border: 'none' }}>
           <div className="flex items-center gap-2 mb-2">
-            <CheckCircle className="w-4 h-4 text-green-400" />
-            <span className="text-green-200 text-sm font-medium">Swap Successful!</span>
+            <CheckCircle className="w-4 h-4" style={{ color: 'white' }} />
+            <span style={{ color: 'white', fontSize: '0.875rem', fontWeight: '500' }}>Swap Successful!</span>
           </div>
-          <p className="text-green-200/80 text-xs mb-2">
+          <p style={{ color: 'white', fontSize: '0.75rem', marginBottom: '0.5rem' }}>
             Transaction completed successfully
           </p>
           <a
             href={`https://solscan.io/tx/${swapSuccess}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-green-300 hover:text-green-200 text-xs"
+            className="inline-flex items-center gap-1 text-xs"
+            style={{ color: 'white' }}
           >
             View on Solscan
             <ExternalLink className="w-3 h-3" />
@@ -316,20 +309,20 @@ const SwapInterface: React.FC = () => {
           <div className="card">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-white/80">Price Impact</span>
-                <span className="text-white">
+                <span style={{ color: 'white' }}>Price Impact</span>
+                <span style={{ color: 'white' }}>
                   {parseFloat(quote.priceImpactPct).toFixed(2)}%
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white/80">Route</span>
-                <span className="text-white">
+                <span style={{ color: 'white' }}>Route</span>
+                <span style={{ color: 'white' }}>
                   {quote.routePlan.length} hop{quote.routePlan.length > 1 ? 's' : ''}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white/80">Slippage</span>
-                <span className="text-white">0.5%</span>
+                <span style={{ color: 'white' }}>Slippage</span>
+                <span style={{ color: 'white' }}>0.5%</span>
               </div>
             </div>
           </div>

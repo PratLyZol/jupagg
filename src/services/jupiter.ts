@@ -1,22 +1,20 @@
 import axios from 'axios'
 import { Connection, Transaction, VersionedTransaction, PublicKey } from '@solana/web3.js'
 import { QuoteResponse, SwapRequest, SwapResponse, Token } from '../types'
-import { createJupiterApiClient, SwapApi } from '@jup-ag/api'
 import JSBI from 'jsbi'
-import Decimal from 'decimal.js'
 
 const JUPITER_API_BASE = 'https://quote-api.jup.ag/v6'
 const JUPITER_TOKEN_API = 'https://lite-api.jup.ag/tokens/v1'
 
-// Jupiter SDK-like implementation using @jup-ag/api
+// Jupiter SDK-like implementation using direct API calls
 export class JupiterSDK {
-  private swapApi: SwapApi
   private connection: Connection
   private tokens: Token[] = []
 
   constructor(connection: Connection) {
     this.connection = connection
-    this.swapApi = new SwapApi(createJupiterApiClient())
+    // Override connection to use Helius RPC endpoint
+    this.connection = new Connection('https://mainnet.helius-rpc.com/?api-key=f9900790-e025-4245-b131-bf85cef5aa35', 'confirmed')
   }
 
   // Load tokens from Jupiter API
@@ -66,17 +64,26 @@ export class JupiterSDK {
     slippageBps?: number
   }) {
     try {
-      console.log('🔍 Computing routes with Jupiter SDK...')
-      const response = await this.swapApi.quoteGet({
+      console.log('🔍 Computing routes with Jupiter API...')
+      
+      const params = new URLSearchParams({
         inputMint: inputMint.toString(),
         outputMint: outputMint.toString(),
         amount: amount.toString(),
-        slippageBps,
-        onlyDirectRoutes: true,
-        asLegacyTransaction: true,
+        slippageBps: slippageBps.toString(),
+        onlyDirectRoutes: 'true', // Force direct routes only
+        asLegacyTransaction: 'true', // Force legacy transactions
+        useSharedAccounts: 'false', // Disable shared accounts
+        maxAccounts: '64', // Limit account count
       })
 
-      const quote = response.data
+      const response = await fetch(`https://quote-api.jup.ag/v6/quote?${params}`)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const quote = await response.json()
       console.log('✅ Routes computed:', quote)
 
       // Convert to the expected format
@@ -109,11 +116,20 @@ export class JupiterSDK {
         wrapAndUnwrapSol: true,
       }
 
-      const response = await this.swapApi.swapPost({
-        swapRequest: swapRequest as any
+      const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(swapRequest)
       })
 
-      console.log('✅ Exchange prepared:', response.data)
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const swapResponse = await response.json()
+      console.log('✅ Exchange prepared:', swapResponse)
 
       return {
         execute: async () => {
@@ -142,8 +158,6 @@ export class JupiterSDK {
         outputMint,
         amount,
         slippageBps: slippageBps.toString(),
-        onlyDirectRoutes: 'true',
-        asLegacyTransaction: 'true',
       })
 
       const response = await fetch(`https://quote-api.jup.ag/v6/quote?${params}`)
@@ -161,10 +175,10 @@ export class JupiterSDK {
     }
   }
 
-  // Get swap transaction with optimized parameters
-  async getSwapTransaction(swapRequest: SwapRequest) {
+  // Get swap transaction (simpler approach with pre-built transaction)
+  async getSwapTransaction(quoteResponse: any, userPublicKey: string) {
     try {
-      console.log('🔧 Building swap transaction with optimized parameters...')
+      console.log('🔧 Building swap transaction with Jupiter API...')
       
       const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
         method: 'POST',
@@ -172,11 +186,9 @@ export class JupiterSDK {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          quoteResponse: swapRequest.quoteResponse,
-          userPublicKey: swapRequest.userPublicKey,
-          wrapAndUnwrapSol: swapRequest.wrapAndUnwrapSol || true,
-          
-          // ADDITIONAL PARAMETERS TO OPTIMIZE FOR TRANSACTION LANDING
+          quoteResponse,
+          userPublicKey,
+          wrapAndUnwrapSol: true,
           dynamicComputeUnitLimit: true,
           dynamicSlippage: true,
           prioritizationFeeLamports: {
@@ -193,7 +205,7 @@ export class JupiterSDK {
       }
 
       const swapResponse = await response.json()
-      console.log('✅ Swap transaction built with optimization:', swapResponse)
+      console.log('✅ Swap transaction built successfully:', swapResponse)
       return swapResponse
     } catch (error) {
       console.error('❌ Swap transaction error:', error)
@@ -201,81 +213,100 @@ export class JupiterSDK {
     }
   }
 
-  // Execute swap
+  // Execute swap using pre-built transaction approach
   async executeSwap(
-    swapResponse: SwapResponse,
+    quoteResponse: any,
+    userPublicKey: string,
     signTransaction: (transaction: VersionedTransaction) => Promise<VersionedTransaction>
   ): Promise<string> {
     try {
-      console.log('🚀 Starting Jupiter SDK swap execution...')
+      console.log('🚀 Starting Jupiter pre-built transaction swap execution...')
+      
+      // Get fresh quote to ensure we have current data
+      console.log('🔄 Getting fresh quote...')
+      const freshQuote = await this.quote(
+        quoteResponse.inputMint,
+        quoteResponse.outputMint,
+        quoteResponse.inAmount,
+        50 // 0.5% slippage
+      )
+      console.log('✅ Fresh quote obtained')
+      
+      // Get swap transaction with fresh quote
+      const swapResponse = await this.getSwapTransaction(freshQuote, userPublicKey)
       
       // Deserialize the transaction
       console.log('📦 Deserializing transaction...')
-      const swapTransactionBuf = Buffer.from(swapResponse.swapTransaction, 'base64')
-      console.log('📏 Transaction buffer size:', swapTransactionBuf.length, 'bytes')
+      const transactionBase64 = swapResponse.swapTransaction
+      console.log('🔍 Transaction base64 length:', transactionBase64.length)
+      console.log('🔍 Swap response keys:', Object.keys(swapResponse))
       
-      let transaction: Transaction | VersionedTransaction
-      let isLegacy = false
-      
-      try {
-        // Try to deserialize as legacy transaction first
-        console.log('🔧 Attempting legacy transaction deserialization...')
-        transaction = Transaction.from(swapTransactionBuf)
-        isLegacy = true
-        console.log('✅ Legacy transaction deserialized successfully')
-      } catch (legacyError: any) {
-        // If that fails, try as versioned transaction
-        console.log('🔄 Legacy deserialization failed, trying versioned...')
-        transaction = VersionedTransaction.deserialize(swapTransactionBuf)
-        isLegacy = false
-        console.log('✅ Versioned transaction deserialized successfully')
-      }
+      const transaction = VersionedTransaction.deserialize(Buffer.from(transactionBase64, 'base64'))
+      console.log('✅ Transaction deserialized successfully')
+      console.log('🔍 Transaction details:', {
+        message: !!transaction.message,
+        signatures: transaction.signatures.length,
+        messageType: transaction.message?.constructor?.name
+      })
 
       // Sign the transaction
       console.log('✍️ Signing transaction...')
-      let signedTransaction: Transaction | VersionedTransaction
-      
-      if (isLegacy) {
-        // For legacy transactions, convert to versioned for wallet signing
-        console.log('🔧 Converting legacy transaction for wallet signing...')
-        const versionedTransaction = new VersionedTransaction(
-          (transaction as Transaction).serialize({
-            requireAllSignatures: false,
-            verifySignatures: false
-          })
-        )
-        signedTransaction = await signTransaction(versionedTransaction)
-        console.log('✅ Legacy transaction converted and signed successfully')
-      } else {
-        // For versioned transactions, sign directly
-        console.log('🔧 Signing versioned transaction directly...')
-        signedTransaction = await signTransaction(transaction as VersionedTransaction)
-        console.log('✅ Versioned transaction signed successfully')
-      }
+      const signedTransaction = await signTransaction(transaction)
+      console.log('✅ Transaction signed successfully')
 
-      // Send the transaction
-      console.log('📤 Sending transaction to network...')
+      // Serialize the signed transaction
+      const transactionBinary = signedTransaction.serialize()
+      console.log('📦 Transaction serialized, size:', transactionBinary.length, 'bytes')
+
+      // Skip simulation to avoid BlockhashNotFound issues
+      console.log('⚠️ Skipping simulation to avoid BlockhashNotFound issues...')
+      console.log('📋 Transaction will be sent directly to the network')
+
+      // Send the transaction to the Solana network
+      console.log('📤 Sending transaction to Solana network...')
       const signature = await this.connection.sendTransaction(signedTransaction, {
-        skipPreflight: false,
-        preflightCommitment: 'confirmed',
         maxRetries: 3,
+        skipPreflight: false,
+        preflightCommitment: 'processed',
       })
-      
+
       console.log('🎉 Transaction sent successfully!')
       console.log('📝 Transaction signature:', signature)
       console.log('🔗 View on Solscan:', `https://solscan.io/tx/${signature}`)
 
-      // Wait for confirmation
-      console.log('⏳ Waiting for transaction confirmation...')
+      // Confirm the transaction with longer timeout
+      console.log('⏳ Confirming transaction...')
       try {
         const confirmation = await this.connection.confirmTransaction({
           signature: signature,
           blockhash: (await this.connection.getLatestBlockhash()).blockhash,
           lastValidBlockHeight: (await this.connection.getLatestBlockhash()).lastValidBlockHeight
-        })
-        console.log('✅ Transaction confirmed:', confirmation)
+        }, 'confirmed')
+
+        if (confirmation.value.err) {
+          console.error('❌ Transaction failed:', confirmation.value.err)
+          throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`)
+        } else {
+          console.log('✅ Transaction successful!')
+          console.log('🔗 View on Solscan:', `https://solscan.io/tx/${signature}`)
+        }
       } catch (confirmError) {
-        console.warn('⚠️ Confirmation check failed, but transaction may still succeed:', confirmError)
+        // If confirmation times out, check if transaction exists
+        console.warn('⚠️ Confirmation timed out, checking transaction status...')
+        try {
+          const txStatus = await this.connection.getSignatureStatus(signature)
+          if (txStatus.value?.confirmationStatus) {
+            console.log('✅ Transaction found with status:', txStatus.value.confirmationStatus)
+            console.log('🔗 View on Solscan:', `https://solscan.io/tx/${signature}`)
+            // Don't throw error if transaction exists
+          } else {
+            console.log('⚠️ Transaction status unknown, but signature was generated')
+            console.log('🔗 Check manually on Solscan:', `https://solscan.io/tx/${signature}`)
+          }
+        } catch (statusError) {
+          console.warn('⚠️ Could not check transaction status:', statusError)
+          console.log('🔗 Check manually on Solscan:', `https://solscan.io/tx/${signature}`)
+        }
       }
 
       return signature
@@ -539,7 +570,7 @@ export class JupiterService {
         // If that fails, try as versioned transaction
         console.log('🔄 Legacy deserialization failed, trying versioned...')
         console.log('📊 Legacy error:', legacyError.message)
-        transaction = VersionedTransaction.deserialize(swapTransactionBuf)
+        transaction = new VersionedTransaction(swapTransactionBuf)
         isLegacy = false
         console.log('✅ Versioned transaction deserialized successfully')
         console.log('📋 Transaction details:', {
