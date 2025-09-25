@@ -197,6 +197,19 @@ body {
   color: white !important;
 }
 
+/* Make route details button transparent */
+.route-details-button {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.route-details-button:hover {
+  background: transparent !important;
+  opacity: 0.8;
+}
+
 /* Force wallet connection text to be white */
 .wallet-prompt span,
 .wallet-prompt p,

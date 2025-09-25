@@ -122,7 +122,8 @@ const RouteVisualization: React.FC<RouteVisualizationProps> = ({
       <div className="flex items-center justify-between">
         <button
           onClick={onToggle}
-          className="flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"
+          className="route-details-button flex items-center gap-2 text-sm font-medium hover:opacity-80 transition-opacity"
+          style={{ background: 'transparent', border: 'none', padding: 0 }}
         >
           <span style={{ color: 'white' }}>Route Details</span>
           <Info className="w-4 h-4" style={{ color: 'white' }} />

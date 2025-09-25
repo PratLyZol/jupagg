@@ -27,6 +27,7 @@ const SwapInterface: React.FC = () => {
   const [tokensLoading, setTokensLoading] = useState(true)
   const [slippage, setSlippage] = useState(0.5)
   const [showRouteDetails, setShowRouteDetails] = useState(false)
+  const [completedSwapQuote, setCompletedSwapQuote] = useState<QuoteResponse | null>(null)
 
   // Initialize with SOL and USDC using Gill
   useEffect(() => {
@@ -135,6 +136,7 @@ const SwapInterface: React.FC = () => {
     setSwapping(true)
     setError(null)
     setSwapSuccess(null)
+    setCompletedSwapQuote(null) // Clear previous swap data
 
     try {
       console.log('📋 Building swap with Gill...')
@@ -151,6 +153,7 @@ const SwapInterface: React.FC = () => {
       console.log('📝 Transaction signature:', signature)
       
       setSwapSuccess(signature)
+      setCompletedSwapQuote(quote) // Store the quote for route visualization
       setFromAmount('')
       setToAmount('')
       setQuote(null)
@@ -245,6 +248,20 @@ const SwapInterface: React.FC = () => {
             View on Solscan
             <ExternalLink className="w-3 h-3" />
           </a>
+        </div>
+      )}
+
+      {/* Route Visualization for Completed Swap */}
+      {swapSuccess && completedSwapQuote && (
+        <div className="mb-4">
+          <RouteVisualization
+            routePlan={completedSwapQuote.routePlan}
+            fromToken={fromToken}
+            toToken={toToken}
+            priceImpact={parseFloat(completedSwapQuote.priceImpactPct)}
+            isVisible={showRouteDetails}
+            onToggle={() => setShowRouteDetails(!showRouteDetails)}
+          />
         </div>
       )}
 
