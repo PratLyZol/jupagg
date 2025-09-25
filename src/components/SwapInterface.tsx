@@ -3,6 +3,8 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
 import { ArrowLeftRight, ArrowUpDown, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react'
 import TokenSelector from './TokenSelector'
+import SlippageControl from './SlippageControl'
+import RouteVisualization from './RouteVisualization'
 import { Token, QuoteResponse } from '../types'
 import { gillJupiterService } from '../services/gill-jupiter'
 
@@ -23,6 +25,8 @@ const SwapInterface: React.FC = () => {
   const [swapSuccess, setSwapSuccess] = useState<string | null>(null)
   const [swapping, setSwapping] = useState(false)
   const [tokensLoading, setTokensLoading] = useState(true)
+  const [slippage, setSlippage] = useState(0.5)
+  const [showRouteDetails, setShowRouteDetails] = useState(false)
 
   // Initialize with SOL and USDC using Gill
   useEffect(() => {
@@ -72,7 +76,7 @@ const SwapInterface: React.FC = () => {
         fromToken.address,
         toToken.address,
         amount,
-        50 // 0.5% slippage
+        slippage * 100 // Convert percentage to basis points
       )
 
       setQuote(quoteData)
@@ -86,7 +90,7 @@ const SwapInterface: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }, [fromToken, toToken, fromAmount])
+  }, [fromToken, toToken, fromAmount, slippage])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -191,12 +195,12 @@ const SwapInterface: React.FC = () => {
 
   // Show wallet connection prompt at the top if not connected
   const walletPrompt = !connected && (
-    <div className="mb-4 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+    <div className="wallet-prompt mb-4 p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
       <div className="flex items-center gap-2 mb-2">
-        <AlertCircle className="w-4 h-4 text-yellow-400" />
-        <span className="text-yellow-100 text-sm font-medium">Wallet Not Connected</span>
+        <AlertCircle className="w-4 h-4 text-white" />
+        <span className="text-white text-sm font-medium">Wallet Not Connected</span>
       </div>
-      <p className="text-yellow-100 text-xs mb-3">
+      <p className="text-white text-xs mb-3">
         Connect your wallet to execute swaps. You can still explore quotes below.
       </p>
       <div className="flex justify-center">
@@ -211,9 +215,7 @@ const SwapInterface: React.FC = () => {
       
       <div className="flex justify-between items-center mb-6">
         <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>Swap</h2>
-        <div style={{ fontSize: '0.875rem', color: 'white', backgroundColor: '#374151', padding: '0.25rem 0.75rem', borderRadius: '9999px' }}>
-          Slippage: Auto
-        </div>
+        <SlippageControl slippage={slippage} onSlippageChange={setSlippage} />
       </div>
 
       {error && (
@@ -322,10 +324,22 @@ const SwapInterface: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span style={{ color: 'white' }}>Slippage</span>
-                <span style={{ color: 'white' }}>0.5%</span>
+                <span style={{ color: 'white' }}>{slippage}%</span>
               </div>
             </div>
           </div>
+        )}
+
+        {/* Route Visualization */}
+        {quote && (
+          <RouteVisualization
+            routePlan={quote.routePlan}
+            fromToken={fromToken}
+            toToken={toToken}
+            priceImpact={parseFloat(quote.priceImpactPct)}
+            isVisible={showRouteDetails}
+            onToggle={() => setShowRouteDetails(!showRouteDetails)}
+          />
         )}
 
         {/* Swap Button */}
