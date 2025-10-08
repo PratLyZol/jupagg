@@ -18,21 +18,7 @@ const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
     []
   )
 
-  // Test RPC connection on app start
-  useEffect(() => {
-    const testConnection = async () => {
-      try {
-        console.log('🧪 Testing RPC connection on app start...')
-        const connection = new Connection(endpoint, 'confirmed')
-        const version = await connection.getVersion()
-        console.log('✅ RPC connection test successful:', version)
-      } catch (error) {
-        console.error('❌ RPC connection test error:', error)
-      }
-    }
-    
-    testConnection()
-  }, [])
+  // Note: RPC connection test removed - Jupiter Plugin handles RPC internally
 
   return (
     <ConnectionProvider endpoint={endpoint}>

@@ -2,13 +2,13 @@
 
 import React from 'react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
-import SwapInterface from './SwapInterface'
+import JupiterPlugin from './JupiterPlugin'
 import WalletContextProvider from './WalletContextProvider'
 
 export default function AppContent() {
   return (
     <WalletContextProvider>
-      <div className="w-full max-w-md mx-auto px-4">
+      <div className="w-full max-w-md mx-auto px-4" style={{ minHeight: '100vh', paddingTop: '2rem', paddingBottom: '2rem' }}>
         {/* Hero Section */}
         <div className="mb-8 fade-in" style={{ textAlign: 'center', width: '100%' }}>
           {/* Logo */}
@@ -23,7 +23,7 @@ export default function AppContent() {
             textAlign: 'center',
             width: '100%'
           }}>
-            JupAgg
+            Gill + Jupiter
           </h1>
           
           {/* Tagline */}
@@ -36,7 +36,7 @@ export default function AppContent() {
             textAlign: 'center',
             width: '100%'
           }}>
-            Swap Solana Tokens Instantly
+            Swap Solana Tokens
           </h2>
           <p style={{ 
             color: '#9ca3af', 
@@ -46,11 +46,11 @@ export default function AppContent() {
             textAlign: 'center',
             width: '100%'
           }}>
-            Best prices across all Solana DEXs with Jupiter aggregation
+            Powered by Jupiter Plugin with Gill wallet integration
           </p>
 
           {/* Wallet Button */}
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', marginBottom: '2rem' }}>
             <WalletMultiButton style={{
               background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
               border: 'none',
@@ -64,32 +64,46 @@ export default function AppContent() {
           </div>
         </div>
 
-        {/* Swap Interface */}
-        <SwapInterface />
+        {/* Jupiter Plugin Integration */}
+        <JupiterPlugin />
 
         {/* Footer Info */}
-        <div className="text-center mt-6 mb-8" style={{ paddingBottom: '2rem' }}>
+        <div className="text-center mt-8" style={{ paddingTop: '2rem' }}>
           <p style={{ 
             color: '#6b7280', 
-            fontSize: '0.75rem'
+            fontSize: '0.75rem',
+            marginBottom: '0.5rem'
           }}>
             Powered by{' '}
             <a 
-              href="https://jup.ag" 
+              href="https://station.jup.ag/docs/apis/swap-api" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#22d3ee', textDecoration: 'none' }}
             >
-              Jupiter
+              Jupiter Plugin
             </a>
-            {' & '}
+            {' + '}
             <a 
-              href="https://solana.com" 
+              href="https://github.com/solana-developers/solana-rpc-get-started" 
               target="_blank" 
               rel="noopener noreferrer"
               style={{ color: '#fb923c', textDecoration: 'none' }}
             >
-              Solana
+              Gill
+            </a>
+          </p>
+          <p style={{ 
+            color: '#6b7280', 
+            fontSize: '0.75rem'
+          }}>
+            <a 
+              href="https://github.com/solana-foundation/templates" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#9ca3af', textDecoration: 'none' }}
+            >
+              View Template Source
             </a>
           </p>
         </div>
