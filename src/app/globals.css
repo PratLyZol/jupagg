@@ -19,10 +19,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: #0a0a0a;
   min-height: 100vh;
-}
-
-#root {
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -342,5 +338,3 @@ body {
 .glass-modal button:hover::before {
   left: 100%;
 }
-
-/* Removed debug styles */

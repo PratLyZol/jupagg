@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { ArrowRight, Info, ExternalLink } from 'lucide-react'
 
