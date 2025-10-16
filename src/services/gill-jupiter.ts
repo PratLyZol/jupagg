@@ -9,14 +9,14 @@ export class GillJupiterService {
   private tokens: Token[] = []
 
   constructor() {
-    // Initialize Gill client with Helius RPC
+    // Initialize Gill client with environment RPC URL
     this.client = createSolanaClient({
-      urlOrMoniker: 'https://mainnet.helius-rpc.com/?api-key=f9900790-e025-4245-b131-bf85cef5aa35'
+      urlOrMoniker: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com'
     })
     
     // Initialize connection for transaction sending
     this.connection = new Connection(
-      'https://mainnet.helius-rpc.com/?api-key=f9900790-e025-4245-b131-bf85cef5aa35',
+      process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
       'confirmed'
     )
   }

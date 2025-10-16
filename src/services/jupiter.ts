@@ -14,7 +14,10 @@ export class JupiterSDK {
   constructor(connection: Connection) {
     this.connection = connection
     // Override connection to use Helius RPC endpoint
-    this.connection = new Connection('https://mainnet.helius-rpc.com/?api-key=f9900790-e025-4245-b131-bf85cef5aa35', 'confirmed')
+    this.connection = new Connection(
+      process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com', 
+      'confirmed'
+    )
   }
 
   // Load tokens from Jupiter API

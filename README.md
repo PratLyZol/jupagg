@@ -41,10 +41,10 @@ A modern Next.js application for swapping Solana tokens using Jupiter's routing 
    ```
 
 4. **Configure your environment**
-   Edit `.env.local` with your settings:
+   Create a `.env.local` file in the root directory:
    ```env
-   # Solana RPC endpoint (using Helius for better performance)
-   NEXT_PUBLIC_SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY
+   # Solana RPC endpoint (replace with your preferred RPC)
+   NEXT_PUBLIC_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
    
    # Optional: Jupiter API key for higher rate limits
    NEXT_PUBLIC_JUPITER_API_KEY=your_jupiter_api_key_here
@@ -103,7 +103,7 @@ Create a `.env.local` file in the root directory:
 
 ```env
 # Required: Solana RPC endpoint
-NEXT_PUBLIC_SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY
+NEXT_PUBLIC_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
 
 # Optional: Jupiter API key for higher rate limits
 NEXT_PUBLIC_JUPITER_API_KEY=your_jupiter_api_key_here
