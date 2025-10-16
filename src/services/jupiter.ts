@@ -523,16 +523,9 @@ export class JupiterService {
     try {
       console.log('🚀 Starting swap execution...')
       console.log('📊 Swap Response Details:', {
-        inputMint: swapResponse.inputMint,
-        inAmount: swapResponse.inAmount,
-        outputMint: swapResponse.outputMint,
-        outAmount: swapResponse.outAmount,
-        otherAmountThreshold: swapResponse.otherAmountThreshold,
-        swapMode: swapResponse.swapMode,
-        slippageBps: swapResponse.slippageBps,
-        platformFee: swapResponse.platformFee,
-        priceImpactPct: swapResponse.priceImpactPct,
-        routePlan: swapResponse.routePlan?.length || 0
+        swapTransaction: swapResponse.swapTransaction?.length || 0,
+        lastValidBlockHeight: swapResponse.lastValidBlockHeight,
+        prioritizationFeeLamports: swapResponse.prioritizationFeeLamports
       })
       
       // Check connection status
@@ -570,7 +563,7 @@ export class JupiterService {
         // If that fails, try as versioned transaction
         console.log('🔄 Legacy deserialization failed, trying versioned...')
         console.log('📊 Legacy error:', legacyError.message)
-        transaction = new VersionedTransaction(swapTransactionBuf)
+        transaction = VersionedTransaction.deserialize(swapTransactionBuf)
         isLegacy = false
         console.log('✅ Versioned transaction deserialized successfully')
         console.log('📋 Transaction details:', {
@@ -587,12 +580,11 @@ export class JupiterService {
       if (isLegacy) {
         // For legacy transactions, convert to versioned for wallet signing
         console.log('🔧 Converting legacy transaction for wallet signing...')
-        const versionedTransaction = new VersionedTransaction(
-          (transaction as Transaction).serialize({
-            requireAllSignatures: false,
-            verifySignatures: false
-          })
-        )
+        const serializedLegacy = (transaction as Transaction).serialize({
+          requireAllSignatures: false,
+          verifySignatures: false
+        })
+        const versionedTransaction = VersionedTransaction.deserialize(serializedLegacy)
         signedTransaction = await signTransaction(versionedTransaction)
         console.log('✅ Legacy transaction converted and signed successfully')
       } else {
