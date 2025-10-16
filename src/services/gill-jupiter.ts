@@ -1,9 +1,11 @@
 import { createSolanaClient } from 'gill'
+import { PublicKey, Connection } from '@solana/web3.js'
 import { Token, QuoteResponse } from '../types'
 
 // Gill-based Jupiter service with simplified API
 export class GillJupiterService {
   private client: ReturnType<typeof createSolanaClient>
+  private connection: Connection
   private tokens: Token[] = []
 
   constructor() {
@@ -11,31 +13,71 @@ export class GillJupiterService {
     this.client = createSolanaClient({
       urlOrMoniker: 'https://mainnet.helius-rpc.com/?api-key=f9900790-e025-4245-b131-bf85cef5aa35'
     })
+    
+    // Initialize connection for transaction sending
+    this.connection = new Connection(
+      'https://mainnet.helius-rpc.com/?api-key=f9900790-e025-4245-b131-bf85cef5aa35',
+      'confirmed'
+    )
   }
 
-  // Load tokens using Gill's simplified approach
+  // Load tokens using Gill's approach with working endpoints
   async loadTokens(): Promise<Token[]> {
     try {
       console.log('🔄 Loading tokens with Gill...')
       
-      // Use Jupiter's token API
-      const response = await fetch('https://token.jup.ag/strict')
-      const tokenData = await response.json()
+      // Try multiple token sources
+      const tokenSources = [
+        'https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json',
+        'https://token.jup.ag/strict',
+        'https://token.jup.ag/all'
+      ]
       
-      this.tokens = tokenData.map((token: any) => ({
-        address: token.address,
-        symbol: token.symbol,
-        name: token.name,
-        decimals: token.decimals
-      }))
+      for (const source of tokenSources) {
+        try {
+          console.log(`🌐 Trying token source: ${source}`)
+          const response = await fetch(source, {
+            signal: AbortSignal.timeout(5000) // 5 second timeout
+          })
+          
+          if (!response.ok) {
+            console.warn(`⚠️ Source ${source} failed with status: ${response.status}`)
+            continue
+          }
+          
+          const tokenData = await response.json()
+          let tokens: any[] = []
+          
+          // Handle different response formats
+          if (Array.isArray(tokenData)) {
+            tokens = tokenData
+          } else if (tokenData.tokens) {
+            tokens = tokenData.tokens
+          } else if (tokenData.data) {
+            tokens = tokenData.data
+          }
+          
+          if (tokens.length > 0) {
+            this.tokens = tokens.map((token: any) => ({
+              address: token.address || token.mint,
+              symbol: token.symbol,
+              name: token.name,
+              decimals: token.decimals,
+              logoURI: token.logoURI || token.image
+            }))
+            
+            console.log('✅ Loaded tokens with Gill from', source, ':', this.tokens.length)
+            return this.tokens
+          }
+        } catch (sourceError) {
+          console.warn(`⚠️ Source ${source} failed:`, sourceError)
+          continue
+        }
+      }
       
-      console.log('✅ Loaded tokens with Gill:', this.tokens.length)
-      return this.tokens
-    } catch (error) {
-      console.error('❌ Error loading tokens with Gill:', error)
-      
-      // Fallback tokens
-      return [
+      // If all sources fail, use expanded basic token list
+      console.log('⚠️ All token sources failed, using expanded basic token list')
+      this.tokens = [
         {
           address: 'So11111111111111111111111111111111111111112',
           symbol: 'SOL',
@@ -54,265 +96,259 @@ export class GillJupiterService {
           name: 'Tether USD',
           decimals: 6,
         },
-      ]
-    }
-  }
-
-  // Mock quote generator for development when API is unavailable
-  private getMockQuote(inputMint: string, outputMint: string, amount: string): QuoteResponse {
-    console.log('🎭 Using MOCK data for development')
-    
-    // Simulate a realistic quote with ~220 USDC per SOL
-    const inAmount = BigInt(amount)
-    const mockRate = 220 // 1 SOL ≈ 220 USDC
-    const outAmount = (inAmount * BigInt(mockRate) * BigInt(1000000)) / BigInt(1000000000) // Convert SOL (9 decimals) to USDC (6 decimals)
-    
-    return {
-      inputMint,
-      outputMint,
-      inAmount: inAmount.toString(),
-      outAmount: outAmount.toString(),
-      otherAmountThreshold: (outAmount * BigInt(995) / BigInt(1000)).toString(), // 0.5% slippage
-      swapMode: 'ExactIn',
-      slippageBps: 50,
-      priceImpactPct: '0.1',
-      routePlan: [
         {
-          swapInfo: {
-            ammKey: 'mock-amm-key',
-            label: 'Raydium',
-            inputMint,
-            outputMint,
-            inAmount: inAmount.toString(),
-            outAmount: outAmount.toString(),
-            notEnoughLiquidity: false,
-            minInAmount: '0',
-            minOutAmount: '0',
-            priceImpactPct: '0.1',
-            lpFee: {
-              amount: '100000',
-              mint: inputMint,
-              pct: 0.25
-            },
-            platformFee: {
-              amount: '0',
-              mint: inputMint,
-              pct: 0
-            }
-          },
-          percent: 100
+          address: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
+          symbol: 'RAY',
+          name: 'Raydium',
+          decimals: 6,
+        },
+        {
+          address: 'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt',
+          symbol: 'SRM',
+          name: 'Serum',
+          decimals: 6,
+        },
+        {
+          address: 'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE',
+          symbol: 'ORCA',
+          name: 'Orca',
+          decimals: 6,
+        },
+        {
+          address: 'MangoCzJ36AjZyKwVj3VnYU4geOnfmLTkgxY3tuonJ4',
+          symbol: 'MNGO',
+          name: 'Mango',
+          decimals: 6,
+        },
+        {
+          address: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
+          symbol: 'BONK',
+          name: 'Bonk',
+          decimals: 5,
+        },
+        {
+          address: 'EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm',
+          symbol: 'WIF',
+          name: 'dogwifhat',
+          decimals: 6,
+        },
+        {
+          address: '7GCihgDB8fe6KNjn2MYtkzZcRjQy3t9GHdC8uHYmW2hr',
+          symbol: 'POPCAT',
+          name: 'Popcat',
+          decimals: 9,
+        },
+        {
+          address: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
+          symbol: 'JUP',
+          name: 'Jupiter',
+          decimals: 6,
+        },
+        {
+          address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
+          symbol: 'mSOL',
+          name: 'Marinade Staked SOL',
+          decimals: 9,
+        },
+        {
+          address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs',
+          symbol: 'Ether',
+          name: 'Ether (Wormhole)',
+          decimals: 8,
+        },
+        {
+          address: 'A9mUU4qviSctJVPJdBJWkb28deg915LYJKrzQ19ji3FM',
+          symbol: 'USDCet',
+          name: 'USD Coin (Wormhole)',
+          decimals: 6,
+        },
+        {
+          address: 'Dn4noZ5jgGfkwnzcQfZkbeNzw9r6ZkFSnCUgCE6PacGo',
+          symbol: 'USDTet',
+          name: 'Tether USD (Wormhole)',
+          decimals: 6,
+        },
+        {
+          address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs',
+          symbol: 'WETH',
+          name: 'Wrapped Ether (Wormhole)',
+          decimals: 8,
+        },
+        {
+          address: 'A94X7f6yPArgcSEbFJzqK4exwJhztK4nKvJf3jR6Vet',
+          symbol: 'WBTC',
+          name: 'Wrapped Bitcoin (Wormhole)',
+          decimals: 8,
+        },
+        {
+          address: '5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm',
+          symbol: 'BOME',
+          name: 'BOOK OF MEME',
+          decimals: 6,
+        },
+        {
+          address: 'HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3',
+          symbol: 'PYTH',
+          name: 'Pyth Network',
+          decimals: 6,
+        },
+        {
+          address: 'HBB111SCpV91WwQKnQHwpTwCyh1ueA3bFuc8z2S1k4e2',
+          symbol: 'HBB',
+          name: 'Hubble Protocol Token',
+          decimals: 6,
         }
-      ],
-      contextSlot: 123456789,
-      timeTaken: 0.5
+      ]
+      
+      console.log('✅ Using basic token list with Gill:', this.tokens.length)
+      return this.tokens
+      
+    } catch (error) {
+      console.error('❌ Error loading tokens with Gill:', error)
+      throw error
     }
   }
 
-  // Get quote using Jupiter API with Gill's fetch approach
+
+  // Get quote using Jupiter API via proxy
   async getQuote(
     inputMint: string,
     outputMint: string,
     amount: string,
-    slippageBps: number = 50
-  ): Promise<QuoteResponse> {
+    slippageBps: number = 50,
+    taker?: string
+  ): Promise<any> {
     try {
-      console.log('🔍 Getting quote with Gill...')
+      console.log('🔍 Getting quote using Jupiter API via proxy...')
       console.log('📊 Quote params:', { inputMint, outputMint, amount, slippageBps })
       
       const params = new URLSearchParams({
-        inputMint,
-        outputMint,
-        amount,
+        inputMint: inputMint.toString(),
+        outputMint: outputMint.toString(),
+        amount: amount.toString(),
         slippageBps: slippageBps.toString(),
+        ...(taker && { taker: taker.toString() })
       })
-
-      // Try direct API first, then fall back to Next.js API route
-      let response: Response
-      let usedProxy = false
-
-      try {
-        console.log('🌐 Trying direct fetch from Jupiter API...')
-        response = await fetch(`https://quote-api.jup.ag/v6/quote?${params}`, {
-          signal: AbortSignal.timeout(5000), // 5 second timeout
-        })
-      } catch (directError) {
-        console.warn('⚠️ Direct API call failed, trying Next.js proxy...', directError)
-        try {
-          usedProxy = true
-          response = await fetch(`/api/quote?${params}`)
-          
-          // If proxy also fails, use mock data
-          if (!response.ok) {
-            console.error('❌ Proxy returned error status:', response.status)
-            console.error('❌ Both API and proxy failed, using mock data for development')
-            return this.getMockQuote(inputMint, outputMint, amount)
-          }
-        } catch (proxyError) {
-          console.error('❌ Proxy threw exception, using mock data for development')
-          return this.getMockQuote(inputMint, outputMint, amount)
-        }
-      }
       
-      console.log('📡 Response status:', response.status, response.statusText, usedProxy ? '(via proxy)' : '(direct)')
+      const response = await fetch(`/api/jupiter/quote?${params}`)
       
       if (!response.ok) {
-        console.error('❌ API Error Response, using mock data')
-        return this.getMockQuote(inputMint, outputMint, amount)
+        console.error('❌ Jupiter API Error:', response.status, response.statusText)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const quoteData = await response.json()
-      console.log('✅ Quote received with Gill:', quoteData)
-      return quoteData
+      const quote = await response.json()
+      console.log('✅ Quote received from Jupiter API:', quote)
+      return quote
+      
     } catch (error: any) {
-      console.error('❌ Quote error with Gill:', error)
+      console.error('❌ Quote error:', error)
       console.error('❌ Error details:', {
         message: error?.message,
         stack: error?.stack
       })
-      throw new Error(`Failed to get quote from Jupiter API: ${error?.message || 'Unknown error'}`)
+      
+      throw new Error(`Failed to get quote from Jupiter API: ${error.message}`)
     }
   }
 
-  // Get swap transaction using Gill's transaction handling
+  // Get swap transaction using Jupiter API via proxy
   async getSwapTransaction(quoteResponse: any, userPublicKey: string) {
     try {
-      console.log('🔧 Building swap transaction with Gill...')
+      console.log('🔧 Building swap transaction using Jupiter API via proxy...')
       
-      const response = await fetch('https://lite-api.jup.ag/swap/v1/swap', {
+      const swapRequest = {
+        quoteResponse,
+        userPublicKey,
+        wrapAndUnwrapSol: true
+      }
+      
+      const response = await fetch('/api/jupiter/swap', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          quoteResponse,
-          userPublicKey,
-          wrapAndUnwrapSol: true,
-          dynamicComputeUnitLimit: true,
-          dynamicSlippage: true,
-          prioritizationFeeLamports: {
-            priorityLevelWithMaxLamports: {
-              maxLamports: 1000000,
-              priorityLevel: "veryHigh"
-            }
-          }
-        })
+        body: JSON.stringify(swapRequest),
+        signal: AbortSignal.timeout(15000) // 15 second timeout
       })
-
+      
+      console.log('📡 Jupiter swap response status:', response.status, response.statusText)
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        console.error('❌ Jupiter swap API error:', response.status, errorText)
+        throw new Error(`Jupiter swap API error: ${response.status} ${response.statusText} - ${errorText}`)
       }
-
-      const swapResponse = await response.json()
-      console.log('✅ Swap transaction built with Gill:', swapResponse)
-      return swapResponse
+      
+      const swapData = await response.json()
+      console.log('✅ Swap transaction received from Jupiter API:', swapData)
+      return swapData
+      
     } catch (error) {
-      console.error('❌ Swap transaction error with Gill:', error)
-      throw new Error('Failed to build swap transaction')
+      console.error('❌ Swap transaction error:', error)
+      throw new Error('Failed to build swap transaction with Jupiter API')
     }
   }
 
-  // Execute swap using Gill's transaction management
+
+  // Execute Jupiter flow: quote → swap → sign → execute
   async executeSwap(
     quoteResponse: any,
     userPublicKey: string,
     signTransaction: (transaction: any) => Promise<any>
   ): Promise<string> {
     try {
-      console.log('🚀 Starting Gill-based swap execution...')
+      console.log('🚀 Starting Jupiter execute flow: quote → swap → sign → execute')
       
-      // Get fresh quote
-      console.log('🔄 Getting fresh quote with Gill...')
-      const freshQuote = await this.getQuote(
-        quoteResponse.inputMint,
-        quoteResponse.outputMint,
-        quoteResponse.inAmount,
-        50 // 0.5% slippage
-      )
-      console.log('✅ Fresh quote obtained with Gill')
+      // Step 1: Get swap transaction from Jupiter API
+      console.log('🔧 Step 1: Getting swap transaction from Jupiter API...')
+      const swapData = await this.getSwapTransaction(quoteResponse, userPublicKey)
       
-      // Get swap transaction
-      const swapResponse = await this.getSwapTransaction(freshQuote, userPublicKey)
+      const swapTransactionBase64 = swapData.swapTransaction
       
-      // Deserialize transaction using standard web3.js approach for wallet compatibility
-      console.log('📦 Deserializing transaction with Gill...')
-      const transactionBase64 = swapResponse.swapTransaction
-      const transactionBuffer = Buffer.from(transactionBase64, 'base64')
-      
-      // Import VersionedTransaction for proper deserialization
-      const { VersionedTransaction } = await import('@solana/web3.js')
-      const transaction = VersionedTransaction.deserialize(transactionBuffer)
-      
-      console.log('✅ Transaction deserialized with Gill')
-      console.log('🔍 Transaction details:', {
-        message: !!transaction.message,
-        signatures: transaction.signatures.length,
-        version: transaction.version
-      })
-      
-      // Sign the transaction
-      console.log('✍️ Signing transaction with Gill...')
-      const signedTransaction = await signTransaction(transaction)
-      console.log('✅ Transaction signed with Gill')
-      
-      // Serialize the signed transaction for sending
-      const serializedTransaction = signedTransaction.serialize()
-      console.log('📦 Transaction serialized, size:', serializedTransaction.length, 'bytes')
-      
-      // Convert to base64 string for Gill's RPC
-      const signedTransactionBase64 = Buffer.from(serializedTransaction).toString('base64')
-      console.log('📦 Transaction converted to base64, length:', signedTransactionBase64.length)
-      
-      // Send transaction using Gill's RPC client
-      console.log('📤 Sending transaction with Gill...')
-      const signature = await this.client.rpc.sendTransaction(signedTransactionBase64 as any, {
-        encoding: 'base64',
-        maxRetries: 3n,
-        skipPreflight: false,
-        preflightCommitment: 'confirmed'
-      }).send()
-      
-      console.log('🎉 Transaction sent successfully with Gill!')
-      console.log('📝 Transaction signature:', signature)
-      console.log('🔗 View on Solscan:', `https://solscan.io/tx/${signature}`)
-      
-      // Wait for confirmation using getSignatureStatuses
-      console.log('⏳ Waiting for confirmation with Gill...')
-      try {
-        // Poll for transaction confirmation
-        let confirmed = false
-        let attempts = 0
-        const maxAttempts = 30 // 30 seconds
-        
-        while (!confirmed && attempts < maxAttempts) {
-          const statuses = await this.client.rpc.getSignatureStatuses([signature as any]).send()
-          const status = statuses.value[0]
-          
-          if (status !== null) {
-            if (status.err) {
-              console.error('❌ Transaction failed:', status.err)
-              throw new Error(`Transaction failed: ${JSON.stringify(status.err)}`)
-            }
-            if (status.confirmationStatus === 'confirmed' || status.confirmationStatus === 'finalized') {
-              console.log('✅ Transaction confirmed with Gill!')
-              confirmed = true
-              break
-            }
-          }
-          
-          attempts++
-          await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-        
-        if (!confirmed) {
-          console.warn('⚠️ Confirmation timeout, but transaction may still succeed')
-        }
-      } catch (confirmError) {
-        console.warn('⚠️ Confirmation check failed, but transaction may still succeed:', confirmError)
+      if (!swapTransactionBase64) {
+        throw new Error('No swap transaction found in response')
       }
       
-      return signature
+      console.log('📝 Step 2: Deserializing swap transaction...')
+      
+      // Step 2: Deserialize the transaction
+      const { VersionedTransaction } = await import('@solana/web3.js')
+      const swapTransactionBuf = Buffer.from(swapTransactionBase64, 'base64')
+      const transaction = VersionedTransaction.deserialize(swapTransactionBuf)
+      
+      console.log('✍️ Step 3: Signing transaction with wallet...')
+      
+      // Step 3: Sign the transaction using the wallet adapter
+      const signedTransaction = await signTransaction(transaction)
+      
+      console.log('🌐 Step 4: Executing transaction on Solana...')
+      
+      // Step 4: Execute the transaction on Solana
+      const latestBlockHash = await this.connection.getLatestBlockhash()
+      
+      // Serialize and send the transaction
+      const rawTransaction = signedTransaction.serialize()
+      const txid = await this.connection.sendRawTransaction(rawTransaction, {
+        skipPreflight: true,
+        maxRetries: 2
+      })
+      
+      // Confirm the transaction
+      await this.connection.confirmTransaction({
+        blockhash: latestBlockHash.blockhash,
+        lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+        signature: txid
+      })
+      
+      console.log('✅ Jupiter execute flow completed successfully!')
+      console.log('📝 Transaction signature:', txid)
+      console.log('🔗 View on Solscan:', `https://solscan.io/tx/${txid}`)
+      
+      return txid
+      
     } catch (error: any) {
-      console.error('💥 Fatal error in Gill swap execution:')
+      console.error('💥 Fatal error in Jupiter execute flow:')
       console.error('📊 Error object:', {
         name: error?.name,
         message: error?.message,
@@ -321,9 +357,9 @@ export class GillJupiterService {
       })
       
       if (error instanceof Error) {
-        throw new Error(`Failed to execute swap transaction with Gill: ${error.message}`)
+        throw new Error(`Failed to execute Jupiter flow: ${error.message}`)
       }
-      throw new Error('Failed to execute swap transaction with Gill')
+      throw new Error('Failed to execute Jupiter flow')
     }
   }
 

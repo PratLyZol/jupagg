@@ -3,8 +3,8 @@ import { Connection, Transaction, VersionedTransaction, PublicKey } from '@solan
 import { QuoteResponse, SwapRequest, SwapResponse, Token } from '../types'
 import JSBI from 'jsbi'
 
-const JUPITER_API_BASE = 'https://quote-api.jup.ag/v6'
-const JUPITER_TOKEN_API = 'https://lite-api.jup.ag/tokens/v1'
+const JUPITER_API_BASE = 'https://lite-api.jup.ag/swap/v1'
+const JUPITER_TOKEN_API = 'https://token.jup.ag/strict'
 
 // Jupiter SDK-like implementation using direct API calls
 export class JupiterSDK {
@@ -77,7 +77,7 @@ export class JupiterSDK {
         maxAccounts: '64', // Limit account count
       })
 
-      const response = await fetch(`https://quote-api.jup.ag/v6/quote?${params}`)
+      const response = await fetch(`https://lite-api.jup.ag/swap/v1/quote?${params}`)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -160,7 +160,7 @@ export class JupiterSDK {
         slippageBps: slippageBps.toString(),
       })
 
-      const response = await fetch(`https://quote-api.jup.ag/v6/quote?${params}`)
+      const response = await fetch(`https://lite-api.jup.ag/swap/v1/quote?${params}`)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

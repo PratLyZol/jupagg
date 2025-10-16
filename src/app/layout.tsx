@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'JupAgg - Solana Swap Aggregator',
-  description: 'Solana Swap Aggregator powered by Gill and Jupiter',
+  description: 'Solana Swap Aggregator powered by Jupiter and Gill',
 }
 
 export default function RootLayout({

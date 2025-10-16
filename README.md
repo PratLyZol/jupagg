@@ -1,298 +1,262 @@
-# Gill + Jupiter Swap Template
+# JupAgg - Solana Token Swap Aggregator
 
-A Next.js template for building Solana token swap applications using [Jupiter Plugin](https://station.jup.ag/docs/apis/swap-api) with [Gill](https://github.com/solana-developers/solana-rpc-get-started) wallet integration.
+A modern Next.js application for swapping Solana tokens using Jupiter's routing engine with an intuitive interface and comprehensive token support.
 
-## Features
+## ✨ Features
 
-- ✨ **Jupiter Plugin Integration** - Embedded swap widget with best-in-class routing
-- 🔐 **Wallet Passthrough** - Seamless wallet adapter integration using Gill
-- 💰 **Referral Fees** - Configure referral rewards via environment variables
-- ⚙️ **Customizable** - Set default tokens and network via env configuration
-- 🎨 **Modern UI** - Built with Next.js 14, Tailwind CSS, and TypeScript
+- 🔄 **Jupiter Integration** - Best-in-class swap routing with optimal price discovery
+- 🪙 **20+ Popular Tokens** - SOL, USDC, USDT, BONK, WIF, JUP, mSOL, and more
+- 🎨 **Modern UI** - Clean, responsive interface with glassmorphism design
+- 🔐 **Wallet Integration** - Seamless connection with Phantom, Solflare, and other Solana wallets
+- ⚡ **Real-time Quotes** - Live price updates and route optimization
+- 🛡️ **Slippage Control** - Customizable slippage tolerance
+- 📊 **Route Visualization** - See swap paths and price impact
+- 🌐 **Mainnet Ready** - Production-ready with Helius RPC integration
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ installed
-- A Solana wallet (Phantom, Solflare, etc.)
+- **Node.js 18+** - [Download here](https://nodejs.org/)
+- **Solana Wallet** - [Phantom](https://phantom.app/) or [Solflare](https://solflare.com/)
+- **Git** - For cloning the repository
 
 ### Installation
 
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd jupagg
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   # Create environment file
+   cp .env.example .env.local
+   ```
+
+4. **Configure your environment**
+   Edit `.env.local` with your settings:
+   ```env
+   # Solana RPC endpoint (using Helius for better performance)
+   NEXT_PUBLIC_SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY
+   
+   # Optional: Jupiter API key for higher rate limits
+   NEXT_PUBLIC_JUPITER_API_KEY=your_jupiter_api_key_here
+   ```
+
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   Navigate to `http://localhost:3000`
+
+## 🛠️ Development
+
+### Available Scripts
+
 ```bash
-# Clone or scaffold with create-solana-dapp
-npx create-solana-dapp@latest -t gh:solana-foundation/templates/community/gill-jupiter-swap
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
 
-# Install dependencies
-npm install
-
-# Copy environment variables
-cp .env.example .env.local
-
-# Start development server
-npm run dev
+# Testing
+npm test             # Run tests (if available)
 ```
 
-Visit `http://localhost:3000` to see your swap interface!
+### Project Structure
 
-## Configuration
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes
+│   │   └── jupiter/       # Jupiter API proxies
+│   ├── globals.css        # Global styles
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Main page
+├── components/            # React components
+│   ├── SwapInterface.tsx  # Main swap interface
+│   ├── TokenSelector.tsx  # Token selection modal
+│   ├── SlippageControl.tsx # Slippage settings
+│   ├── RouteVisualization.tsx # Route details
+│   └── WalletContextProvider.tsx # Wallet setup
+├── services/              # Business logic
+│   └── gill-jupiter.ts   # Jupiter service integration
+└── types/                 # TypeScript definitions
+    └── index.ts
+```
+
+## 🔧 Configuration
 
 ### Environment Variables
 
-Create a `.env.local` file with the following variables:
+Create a `.env.local` file in the root directory:
 
 ```env
-# Solana RPC endpoint
-NEXT_PUBLIC_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+# Required: Solana RPC endpoint
+NEXT_PUBLIC_SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY
 
-# Referral account (your wallet address)
-NEXT_PUBLIC_JUP_REFERRAL_ACCOUNT=YourWalletAddressHere
+# Optional: Jupiter API key for higher rate limits
+NEXT_PUBLIC_JUPITER_API_KEY=your_jupiter_api_key_here
 
-# Referral fee (in basis points, max 100 = 1%)
-NEXT_PUBLIC_JUP_REFERRAL_BPS=50
-
-# Default tokens
-NEXT_PUBLIC_DEFAULT_INPUT_MINT=So11111111111111111111111111111111111111112
-NEXT_PUBLIC_DEFAULT_OUTPUT_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
-
-# Strict token list (true/false)
-NEXT_PUBLIC_STRICT_TOKEN_LIST=false
-```
-
-### Wallet Passthrough Integration
-
-This template uses **wallet passthrough**, meaning Jupiter Plugin automatically uses your connected wallet without requiring separate authentication. The wallet adapter is passed directly to Jupiter:
-
-```typescript
-window.Jupiter.init({
-  passThroughWallet: wallet, // Solana wallet adapter
-  // ... other config
-});
-```
-
-**Benefits:**
-
-- Single wallet connection for your entire dapp
-- No duplicate wallet prompts
-- Consistent user experience
-
-### Referral Configuration
-
-Earn referral fees on swaps by configuring your wallet address:
-
-1. Set `NEXT_PUBLIC_JUP_REFERRAL_ACCOUNT` to your Solana wallet address
-2. Set `NEXT_PUBLIC_JUP_REFERRAL_BPS` (1-100, where 100 = 1% fee)
-3. Users swapping through your dapp will generate fees to your wallet
-
-**Example:**
-
-```env
-NEXT_PUBLIC_JUP_REFERRAL_ACCOUNT=YourPublicKey123
-NEXT_PUBLIC_JUP_REFERRAL_BPS=50  # 0.5% fee
-```
-
-**Note:** Referral fees are capped at 100 basis points (1%) by Jupiter.
-
-### Token Mint Configuration
-
-Configure default input/output tokens by setting mint addresses:
-
-```env
+# Optional: Default tokens (SOL and USDC)
 NEXT_PUBLIC_DEFAULT_INPUT_MINT=So11111111111111111111111111111111111111112
 NEXT_PUBLIC_DEFAULT_OUTPUT_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 ```
 
-#### Finding Token Mint Addresses
+### RPC Endpoints
 
-**Option 1: Solscan**
+**Recommended:**
+- **Helius** - `https://mainnet.helius-rpc.com/?api-key=YOUR_API_KEY`
+- **QuickNode** - `https://your-endpoint.solana-mainnet.quiknode.pro/YOUR_API_KEY/`
 
-1. Visit [solscan.io](https://solscan.io/)
-2. Search for your token
-3. Copy the "Token Address" from the token page
+**Free Options:**
+- **Solana Foundation** - `https://api.mainnet-beta.solana.com`
+- **Alchemy** - `https://solana-mainnet.g.alchemy.com/v2/YOUR_API_KEY`
 
-**Option 2: Jupiter Token List**
+## 🪙 Supported Tokens
 
-- Browse verified tokens at [station.jup.ag/docs/token-list](https://station.jup.ag/docs/token-list)
+The application supports 20+ popular Solana tokens:
 
-#### Common Token Mints
+### Major Tokens
+- **SOL** - Solana (native)
+- **USDC** - USD Coin
+- **USDT** - Tether USD
 
-| Token         | Mint Address                                   |
-| ------------- | ---------------------------------------------- |
-| SOL (wrapped) | `So11111111111111111111111111111111111111112`  |
-| USDC          | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` |
-| USDT          | `Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB` |
-| RAY           | `4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R` |
-| BONK          | `DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263` |
+### DeFi Tokens
+- **RAY** - Raydium
+- **ORCA** - Orca
+- **JUP** - Jupiter
+- **mSOL** - Marinade Staked SOL
+- **MNGO** - Mango
 
-#### wSOL vs Native SOL
+### Meme Coins
+- **BONK** - Bonk
+- **WIF** - dogwifhat
+- **POPCAT** - Popcat
+- **BOME** - BOOK OF MEME
 
-- **wSOL (wrapped SOL)**: Mint address shown above, required for Jupiter swaps
-- **Native SOL**: Automatically wrapped/unwrapped by Jupiter Plugin
-- Users can swap using native SOL directly - wrapping happens behind the scenes
+### Cross-chain Assets
+- **WETH** - Wrapped Ether
+- **WBTC** - Wrapped Bitcoin
 
-### Changing Networks
-
-For devnet/testnet:
-
-```env
-NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
-NEXT_PUBLIC_SOLANA_NETWORK=devnet
-```
-
-**Important:** Use devnet token mints when on devnet. Mainnet addresses won't work on devnet.
-
-## Project Structure
-
-```
-gill-jupiter-swap/
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx          # Root layout
-│   │   ├── page.tsx             # Main page
-│   │   └── globals.css          # Global styles
-│   └── components/
-│       ├── AppContent.tsx       # Main app component
-│       ├── JupiterPlugin.tsx    # Jupiter Plugin integration ⭐
-│       └── WalletContextProvider.tsx  # Wallet setup
-├── types/
-│   └── jupiter.d.ts             # Jupiter Plugin type declarations
-├── .env.example                 # Environment template
-├── package.json
-└── README.md
-```
-
-## Advanced Usage
-
-### Customizing Jupiter Plugin
-
-Edit `src/components/JupiterPlugin.tsx` to customize Jupiter behavior:
-
-```typescript
-window.Jupiter.init({
-  displayMode: "integrated", // or 'modal', 'widget'
-  strictTokenList: true, // Only show verified tokens
-  defaultExplorer: "Solscan", // or 'Solana Explorer'
-  formProps: {
-    initialAmount: "1000000", // Default amount in base units
-  },
-  // ... more options
-});
-```
-
-### Handling Swap Events
-
-Add custom logic after successful swaps:
-
-```typescript
-onSuccess: (txid: string) => {
-  console.log('Swap completed!', txid);
-  // Add your custom logic here
-  // - Update UI
-  // - Track analytics
-  // - Show notifications
-},
-```
-
-## API Documentation
-
-### Jupiter Plugin
-
-- **Docs**: [station.jup.ag/docs/apis/swap-api](https://station.jup.ag/docs/apis/swap-api)
-- **GitHub**: [github.com/jup-ag/terminal](https://github.com/jup-ag/terminal)
-
-### Jupiter V6 Swap API
-
-- **API Reference**: [station.jup.ag/api-v6](https://station.jup.ag/api-v6)
-- **Integration Guide**: [station.jup.ag/docs/apis/swap-api](https://station.jup.ag/docs/apis/swap-api)
-
-### Gill (Solana RPC)
-
-- **GitHub**: [github.com/solana-developers/solana-rpc-get-started](https://github.com/solana-developers/solana-rpc-get-started)
-- **Docs**: Lightweight Solana wallet adapter
-
-## Troubleshooting
-
-### Plugin Not Loading
-
-```
-❌ Failed to load Jupiter Plugin script
-```
-
-**Solution:** Check your internet connection and ensure `terminal.jup.ag` is accessible.
-
-### Wallet Not Connecting
-
-```
-⚠️ Wallet adapter not found
-```
-
-**Solution:** Ensure you have a compatible Solana wallet browser extension installed.
-
-### Wrong Network
-
-```
-❌ Transaction failed - wrong cluster
-```
-
-**Solution:** Verify your `NEXT_PUBLIC_SOLANA_RPC_URL` matches your wallet's network setting.
-
-### Referral Not Working
-
-```
-💰 Referral fees not showing
-```
-
-**Solution:**
-
-1. Ensure `NEXT_PUBLIC_JUP_REFERRAL_ACCOUNT` is a valid Solana address
-2. Check `NEXT_PUBLIC_JUP_REFERRAL_BPS` is between 1-100
-3. Referral fees appear after swap completion
-
-## Deployment
+## 🚀 Deployment
 
 ### Vercel (Recommended)
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
+1. **Install Vercel CLI**
+   ```bash
+   npm i -g vercel
+   ```
 
-# Deploy
-vercel
+2. **Deploy**
+   ```bash
+   vercel
+   ```
 
-# Set environment variables in Vercel dashboard
-```
+3. **Set environment variables**
+   - Go to Vercel dashboard
+   - Navigate to your project
+   - Add environment variables in Settings
 
 ### Other Platforms
 
-This is a standard Next.js app and works on:
+This Next.js app works on:
+- **Netlify** - Automatic deployments from Git
+- **Railway** - Simple deployment with environment variables
+- **Self-hosted** - Any Node.js hosting platform
 
-- Vercel
-- Netlify
-- Railway
-- Self-hosted Node.js
+## 🐛 Troubleshooting
 
-**Remember:** Set all environment variables in your hosting platform's dashboard.
+### Common Issues
 
-## Contributing
+**Wallet Not Connecting**
+```
+⚠️ Wallet adapter not found
+```
+**Solution:** Install a Solana wallet browser extension (Phantom, Solflare, etc.)
 
-Found a bug or want to improve the template?
+**RPC Errors**
+```
+❌ RPC endpoint not responding
+```
+**Solution:** Check your RPC endpoint in `.env.local` and ensure it's valid
 
-1. Fork the [templates repo](https://github.com/solana-foundation/templates)
-2. Create your branch: `git checkout -b feature/amazing-feature`
+**Build Errors**
+```
+❌ Module not found
+```
+**Solution:** Run `npm install` to install all dependencies
+
+**Swap Failures**
+```
+❌ Transaction failed
+```
+**Solutions:**
+- Ensure you have sufficient SOL for transaction fees
+- Check that you have enough of the input token
+- Try increasing slippage tolerance
+- Verify you're connected to Solana Mainnet
+
+### Debug Mode
+
+Enable detailed logging by opening browser DevTools:
+1. Press `F12` to open DevTools
+2. Go to Console tab
+3. Look for Jupiter API logs and error messages
+
+## 📚 API Reference
+
+### Jupiter API Integration
+
+The app uses Jupiter's v1 lite API for optimal performance:
+
+- **Quote Endpoint:** `https://lite-api.jup.ag/swap/v1/quote`
+- **Swap Endpoint:** `https://lite-api.jup.ag/swap/v1/swap`
+
+### Supported Parameters
+
+- **inputMint** - Source token mint address
+- **outputMint** - Destination token mint address  
+- **amount** - Amount in smallest token unit (lamports)
+- **slippageBps** - Slippage tolerance in basis points (50 = 0.5%)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push: `git push origin feature/amazing-feature`
+4. Push to branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
-## License
+## 📄 License
 
-MIT License - feel free to use this template for your projects!
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 🙏 Acknowledgments
 
-- **Jupiter Discord**: [discord.gg/jup](https://discord.gg/jup)
-- **Solana Stack Exchange**: [solana.stackexchange.com](https://solana.stackexchange.com)
-- **Template Issues**: [github.com/solana-foundation/templates/issues](https://github.com/solana-foundation/templates/issues)
+- **Jupiter** - For the amazing swap routing engine
+- **Solana Foundation** - For the robust blockchain infrastructure
+- **Gill** - For the wallet integration framework
+- **Next.js Team** - For the excellent React framework
+
+## 📞 Support
+
+- **Jupiter Discord:** [discord.gg/jup](https://discord.gg/jup)
+- **Solana Stack Exchange:** [solana.stackexchange.com](https://solana.stackexchange.com)
+- **GitHub Issues:** [Create an issue](https://github.com/your-repo/issues)
 
 ---
 
-**Built with ❤️ by the Solana community**
+**Built with ❤️ for the Solana community**
+
+*Happy swapping! 🚀*

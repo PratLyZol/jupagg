@@ -35,9 +35,9 @@ const SwapInterface: React.FC = () => {
     const initializeTokens = async () => {
       try {
         setTokensLoading(true)
-        console.log('Loading tokens with Gill...')
+        console.log('Loading tokens with Gill Jupiter...')
         const tokenList = await gillJupiterService.loadTokens()
-        console.log('Loaded tokens with Gill:', tokenList.length, 'tokens')
+        console.log('Loaded tokens with Gill Jupiter:', tokenList.length, 'tokens')
         console.log('First few tokens:', tokenList.slice(0, 5))
         setTokens(tokenList)
         
@@ -74,31 +74,22 @@ const SwapInterface: React.FC = () => {
 
     try {
       const amount = (parseFloat(fromAmount) * Math.pow(10, fromToken.decimals)).toString()
-      console.log('💱 Fetching quote:', {
-        from: fromToken.symbol,
-        to: toToken.symbol,
-        amount: fromAmount,
-        amountRaw: amount
-      })
-      
+      console.log('🔄 Getting quote with Jupiter...')
       const quoteData = await gillJupiterService.getQuote(
         fromToken.address,
         toToken.address,
         amount,
-        slippage * 100 // Convert percentage to basis points
+        slippage * 100, // Convert percentage to basis points
+        publicKey?.toString() // Pass the wallet public key as taker
       )
 
       setQuote(quoteData)
       const outAmount = parseFloat(quoteData.outAmount) / Math.pow(10, toToken.decimals)
       setToAmount(outAmount.toFixed(6))
-      console.log('✅ Quote successful:', {
-        input: fromAmount,
-        output: outAmount.toFixed(6)
-      })
-    } catch (err: any) {
-      console.error('Quote error with Gill:', err)
-      const errorMessage = err?.message || 'Failed to get quote. Please try again.'
-      setError(errorMessage)
+      console.log('✅ Quote received successfully with Jupiter')
+    } catch (err) {
+      console.error('Quote error with Jupiter:', err)
+      setError('Failed to get quote. Please try again.')
       setQuote(null)
       setToAmount('')
     } finally {
@@ -135,10 +126,10 @@ const SwapInterface: React.FC = () => {
       return
     }
 
-    console.log('🔄 Starting swap process with Gill...')
+    console.log('🔄 Starting Jupiter execute flow: quote → swap → sign → execute')
     console.log('👤 User wallet:', publicKey.toString())
     console.log('🌐 Network: MAINNET (make sure your wallet is connected to mainnet!)')
-    console.log('💱 Swap quote:', {
+    console.log('💱 Swap details:', {
       from: fromToken?.symbol,
       to: toToken?.symbol,
       amount: fromAmount,
@@ -152,17 +143,17 @@ const SwapInterface: React.FC = () => {
     setCompletedSwapQuote(null) // Clear previous swap data
 
     try {
-      console.log('📋 Building swap with Gill...')
+      console.log('📋 Executing Jupiter flow...')
       
-      // Execute the swap using Gill
-      console.log('🚀 Executing swap with Gill...')
+      // Execute the Jupiter flow: quote → swap → sign → execute
+      console.log('🚀 Executing Jupiter flow...')
       const signature = await gillJupiterService.executeSwap(
         quote,
         publicKey.toString(),
         signTransaction
       )
       
-      console.log('🎉 Swap completed successfully with Gill!')
+      console.log('🎉 Jupiter execute flow completed successfully!')
       console.log('📝 Transaction signature:', signature)
       
       setSwapSuccess(signature)
@@ -172,11 +163,11 @@ const SwapInterface: React.FC = () => {
       setQuote(null)
       
       // Show success message even if confirmation timed out
-      console.log('✅ Swap transaction sent successfully with Gill!')
+      console.log('✅ Jupiter execute flow completed successfully!')
       console.log('🔗 View on Solscan:', `https://solscan.io/tx/${signature}`)
       
     } catch (err: any) {
-      console.error('💥 Swap process failed with Gill:')
+      console.error('💥 Jupiter execute flow failed:')
       console.error('📊 Error details:', {
         name: err?.name,
         message: err?.message,
@@ -192,7 +183,7 @@ const SwapInterface: React.FC = () => {
       }
       
       // Provide more specific error messages
-      let errorMessage = 'Failed to execute swap transaction with Gill'
+      let errorMessage = 'Failed to execute Jupiter flow'
       if (err?.message?.includes('403')) {
         errorMessage = 'RPC access denied. Please try a different RPC endpoint.'
       } else if (err?.message?.includes('insufficient')) {
@@ -470,7 +461,7 @@ const SwapInterface: React.FC = () => {
           />
         )}
 
-        {/* Swap Button */}
+        {/* Execute Button */}
         <button
           onClick={handleSwap}
           disabled={!quote || loading || swapping || !fromAmount || parseFloat(fromAmount) <= 0 || !connected}
@@ -524,17 +515,12 @@ const SwapInterface: React.FC = () => {
           ) : swapping ? (
             <>
               <Loader2 className="w-5 h-5 loading" />
-              Confirming Swap...
-            </>
-          ) : !quote || !fromAmount || parseFloat(fromAmount) <= 0 ? (
-            <>
-              <AlertCircle className="w-5 h-5" />
-              Enter Amount to Swap
+              Executing...
             </>
           ) : (
             <>
               <ArrowLeftRight className="w-5 h-5" />
-              Review Swap
+              Execute Swap
             </>
           )}
         </button>

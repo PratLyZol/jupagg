@@ -19,10 +19,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: #0a0a0a;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
 }
 
 .glass {
@@ -47,69 +43,76 @@ body {
 }
 
 .btn-primary {
-  background: #ffffff !important;
-  color: #000000 !important;
-  font-weight: 600 !important;
-  padding: 16px 24px !important;
-  border-radius: 12px !important;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
 .btn-primary:hover {
-  background: #f0f0f0 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.6);
 }
 
 .btn-primary:disabled {
-  background: #333333 !important;
-  color: #666666 !important;
-  cursor: not-allowed !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .btn-secondary {
-  background: #2a2a2a !important;
-  color: #ffffff !important;
-  border: 1px solid #3a3a3a !important;
-  padding: 12px 16px !important;
-  border-radius: 12px !important;
-  font-weight: 500 !important;
+  background: rgba(31, 41, 55, 0.4);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  color: white;
 }
 
 .btn-secondary:hover {
-  background: #3a3a3a !important;
+  background: rgba(55, 65, 81, 0.7);
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card {
+  background: rgba(31, 41, 55, 0.4);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  border-radius: 16px;
+  padding: 16px;
 }
 
 .input {
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background: rgba(31, 41, 55, 0.4);
+  border: 1px solid rgba(75, 85, 99, 0.3);
   border-radius: 12px;
-  padding: 16px;
-  color: #ffffff;
+  padding: 12px 16px;
+  color: white;
   font-size: 16px;
-  width: 100%;
   transition: all 0.2s ease;
 }
 
 .input:focus {
   outline: none;
-  border-color: #4a4a4a;
-  background: #333333;
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .input::placeholder {
-  color: #888888;
+  color: #9ca3af;
 }
 
-.card {
-  background: #2a2a2a;
-  border: 1px solid #3a3a3a;
-  border-radius: 12px;
-  padding: 20px;
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loading {
@@ -117,224 +120,119 @@ body {
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease-in;
+.wallet-prompt {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Override wallet adapter styles */
-.wallet-adapter-button {
-  background: #2a2a2a !important;
-  border: 1px solid #3a3a3a !important;
-  color: #ffffff !important;
-  border-radius: 12px !important;
-  font-weight: 500 !important;
-  padding: 12px 24px !important;
-  transition: all 0.2s ease !important;
-}
-
-.wallet-adapter-button:hover {
-  background: #3a3a3a !important;
-  transform: none !important;
-}
-
-.wallet-adapter-button-trigger {
-  background: #2a2a2a !important;
-  border: 1px solid #3a3a3a !important;
-  color: #ffffff !important;
-  border-radius: 12px !important;
-  font-weight: 500 !important;
-  padding: 12px 24px !important;
-}
-
-.wallet-adapter-button-trigger:hover {
-  background: #3a3a3a !important;
-}
-
-/* Glass modal effect for slippage control */
-.glass-modal {
-  background: rgba(26, 26, 26, 0.95) !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
-}
-
-
-/* Force white text in modal */
-.glass-modal h3,
-.glass-modal label,
-.glass-modal p,
-.glass-modal span {
-  color: white !important;
-}
-
-/* Force slippage button width */
 .slippage-button {
-  min-width: 300px !important;
-  width: auto !important;
+  background: rgba(31, 41, 55, 0.4);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  color: white;
+  transition: all 0.2s ease;
 }
 
-/* Force slippage info text to be white */
-.slippage-info-text {
-  color: white !important;
+.slippage-button:hover {
+  background: rgba(55, 65, 81, 0.7);
+  border-color: rgba(99, 102, 241, 0.5);
 }
 
-/* Force all text in slippage modal to be white */
-.glass p {
-  color: white !important;
-}
-
-/* Make route details button transparent */
 .route-details-button {
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  box-shadow: none !important;
+  color: white;
+  transition: opacity 0.2s ease;
 }
 
 .route-details-button:hover {
-  background: transparent !important;
   opacity: 0.8;
 }
 
-/* Force wallet connection text to be white */
-.wallet-prompt span,
-.wallet-prompt p,
-.wallet-prompt svg {
-  color: white !important;
+.slippage-info-text {
+  color: #9ca3af;
+  line-height: 1.4;
 }
 
-.glass-modal input {
-  color: white !important;
-  background-color: rgba(31, 41, 55, 0.8) !important;
-  border-color: rgb(75, 85, 99) !important;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
 }
 
-.glass-modal input::placeholder {
-  color: rgb(156, 163, 175) !important;
+::-webkit-scrollbar-track {
+  background: rgba(31, 41, 55, 0.3);
+  border-radius: 3px;
 }
 
-/* Enhanced slippage control styling */
-.slippage-preset-btn {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid transparent;
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.6);
+  border-radius: 3px;
 }
 
-.slippage-preset-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.8);
 }
 
-.slippage-preset-btn.selected {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
-  border-color: #60a5fa !important;
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+/* Responsive design */
+@media (max-width: 640px) {
+  .glass {
+    margin: 10px;
+    padding: 16px;
+  }
+  
+  .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .input {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
 }
 
-.slippage-preset-btn.selected::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-  animation: shimmer 2s infinite;
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #0a0a0a;
+  }
+  
+  .glass {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+  }
 }
 
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
+/* Animation utilities */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Custom input styling */
-.slippage-input {
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.9), rgba(17, 24, 39, 0.9)) !important;
-  border: 1px solid rgba(75, 85, 99, 0.5) !important;
-  transition: all 0.3s ease;
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.slippage-input:focus {
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-  background: linear-gradient(135deg, rgba(31, 41, 55, 1), rgba(17, 24, 39, 1)) !important;
+.animate-bounce {
+  animation: bounce 1s infinite;
 }
 
-/* Set button styling */
-.slippage-set-btn {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
-  border: 1px solid #60a5fa !important;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.slippage-set-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb, #1e40af) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.slippage-set-btn:disabled {
-  background: rgba(75, 85, 99, 0.5) !important;
-  border-color: rgba(75, 85, 99, 0.3) !important;
-  cursor: not-allowed;
-}
-
-/* Warning message styling */
-.slippage-warning {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.1)) !important;
-  border: 1px solid rgba(245, 158, 11, 0.3) !important;
-  backdrop-filter: blur(10px);
-}
-
-/* Info text styling */
-.slippage-info {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(29, 78, 216, 0.05));
-  border-left: 3px solid #3b82f6;
-  padding-left: 12px;
-}
-
-.glass-modal::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-/* Enhanced button hover effects */
-.glass-modal button {
-  position: relative;
-  overflow: hidden;
-}
-
-.glass-modal button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.5s;
-}
-
-.glass-modal button:hover::before {
-  left: 100%;
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
 }
