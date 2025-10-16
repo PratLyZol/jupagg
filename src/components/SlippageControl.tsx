@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react'
 import { Settings, ChevronDown, ChevronUp } from 'lucide-react'
 
